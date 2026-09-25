@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <!--
+    App instalável do Financeiro. Esta página não tem dados nem regras do sistema: ela só abre o
+    Web App do Apps Script (link oficial) em tela cheia, com ícone, nome e manifesto de app — é o
+    que permite "Instalar" no Android/computador e "Adicionar à Tela de Início" no iPhone.
+    Atualizações do sistema aparecem aqui sozinhas (o conteúdo vem sempre do Apps Script).
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Financeiro</title>
+  <meta name="description" content="Controle financeiro pessoal e compartilhado.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icones/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icones/favicon-16.png">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Financeiro">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    :root { --accent: #4f46e5; --bg: #f5f6f8; --texto: #15171c; --suave: #6b6f78; --borda: #e6e8ec; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; }
+    body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--texto); -webkit-font-smoothing: antialiased; }
+
+    #sistema { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+
+    /* Abertura (igual à do app) enquanto o sistema carrega */
+    #abertura { position: fixed; inset: 0; z-index: 5; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; transition: opacity .25s; }
+    #abertura.saindo { opacity: 0; pointer-events: none; }
+    .logo { width: 60px; height: 60px; border-radius: 18px; background: linear-gradient(135deg, #4f46e5, #6d5ef0); color: #fff; display: flex; align-items: center; justify-content: center; animation: pulsar 1.6s ease-in-out infinite; box-shadow: 0 10px 28px rgba(79,70,229,.3); }
+    .logo svg { width: 30px; height: 30px; }
+    .nome { font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 10px; }
+    .spinner { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--accent); border-right-color: transparent; animation: girar .7s linear infinite; }
+    @keyframes pulsar { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    @keyframes girar { to { transform: rotate(360deg); } }
+    .mensagem { max-width: 300px; text-align: center; font-size: 13.5px; line-height: 1.5; color: var(--suave); display: none; }
+    .mensagem.ativa { display: block; }
+    .mensagem button, .mensagem a { display: inline-block; margin-top: 12px; padding: 11px 18px; border-radius: 11px; border: none; background: var(--accent); color: #fff; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+
+    /* Convite pra instalar (só no navegador, nunca dentro do app já instalado) */
+    #convite { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 10; max-width: 440px; margin: 0 auto; background: #fff; border: 1px solid var(--borda); border-radius: 16px; box-shadow: 0 12px 32px rgba(16,24,40,.16); padding: 12px 12px 12px 14px; display: none; align-items: center; gap: 12px; }
+    #convite.ativo { display: flex; animation: descer .2s ease; }
+    @keyframes descer { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    #convite img { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
+    #convite .texto { flex: 1; font-size: 13px; line-height: 1.4; color: var(--suave); }
+    #convite .texto strong { display: block; color: var(--texto); font-size: 14px; }
+    #convite .instalar { border: none; background: var(--accent); color: #fff; font: inherit; font-size: 13.5px; font-weight: 600; padding: 9px 14px; border-radius: 10px; cursor: pointer; }
+    #convite .fechar { border: none; background: none; color: var(--suave); font-size: 20px; line-height: 1; padding: 4px 6px; cursor: pointer; }
+    .icone-compartilhar { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; }
+
+    @media (prefers-reduced-motion: reduce) { .logo { animation: none; } .spinner { animation-duration: 1.6s; } }
+  </style>
+</head>
+<body>
+  <div id="abertura" role="status" aria-label="Carregando o Financeiro">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+      </svg>
+    </div>
+    <div class="nome">Financeiro</div>
+    <div class="spinner" id="spinner"></div>
+    <div class="mensagem" id="msg-offline">Sem conexão com a internet. O Financeiro precisa de internet pra funcionar.<br><button type="button" onclick="location.reload()">Tentar de novo</button></div>
+    <div class="mensagem" id="msg-demora">Está demorando mais que o normal…<br><a id="link-direto" target="_blank" rel="noopener">Abrir no navegador</a></div>
+  </div>
+
+  <div id="convite" role="dialog" aria-label="Instalar o Financeiro">
+    <img src="icones/icone-192.png" alt="">
+    <div class="texto" id="convite-texto"><strong>Instale o Financeiro</strong>Abra direto da tela inicial, como um app.</div>
+    <button class="instalar" id="convite-instalar" type="button">Instalar</button>
+    <button class="fechar" id="convite-fechar" type="button" aria-label="Agora não">&times;</button>
+  </div>
+
+  <script>
+    // Link oficial do Web App (implantação fixa — atualizações do sistema não mudam este endereço).
+    var URL_SISTEMA = 'https://script.google.com/macros/s/AKfycbyEVmvdCYTZFwE9M_OKsrGjdOcR1t-iSPTZ2J6cbri6csnvGzPOIHZONtJpNMVZcS2TuQ/exec';
+
+    var abertura = document.getElementById('abertura');
+    document.getElementById('link-direto').href = URL_SISTEMA;
+
+    function mostrarMensagem(id) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById(id).classList.add('ativa');
+    }
+
+    if (!navigator.onLine) {
+      mostrarMensagem('msg-offline');
+    } else {
+      var quadro = document.createElement('iframe');
+      quadro.id = 'sistema';
+      quadro.title = 'Financeiro';
+      quadro.allow = 'clipboard-write';
+      quadro.src = URL_SISTEMA;
+      // A abertura some quando o sistema termina de carregar (o próprio app mostra os carregamentos dali em diante).
+      quadro.addEventListener('load', function () {
+        clearTimeout(timerDemora);
+        abertura.classList.add('saindo');
+        setTimeout(function () { abertura.style.display = 'none'; }, 300);
+      });
+      document.body.appendChild(quadro);
+      var timerDemora = setTimeout(function () { mostrarMensagem('msg-demora'); }, 25000);
+    }
+
+    /* ---------- Convite pra instalar ---------- */
+
+    var emApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var convite = document.getElementById('convite');
+    var pedidoInstalacao = null;
+
+    function conviteDispensado() {
+      try { return localStorage.getItem('convite-dispensado') === 'sim'; } catch (e) { return false; }
+    }
+    function dispensarConvite() {
+      convite.classList.remove('ativo');
+      try { localStorage.setItem('convite-dispensado', 'sim'); } catch (e) {}
+    }
+    document.getElementById('convite-fechar').addEventListener('click', dispensarConvite);
+
+    // Android / computador (Chrome, Edge): o navegador avisa que dá pra instalar.
+    window.addEventListener('beforeinstallprompt', function (ev) {
+      ev.preventDefault();
+      pedidoInstalacao = ev;
+      if (!emApp && !conviteDispensado()) convite.classList.add('ativo');
+    });
+    document.getElementById('convite-instalar').addEventListener('click', function () {
+      if (!pedidoInstalacao) { dispensarConvite(); return; }
+      pedidoInstalacao.prompt();
+      pedidoInstalacao.userChoice.then(function () { pedidoInstalacao = null; convite.classList.remove('ativo'); });
+    });
+    window.addEventListener('appinstalled', function () { convite.classList.remove('ativo'); });
+
+    // iPhone/iPad no Safari: não existe botão de instalar — mostra como fazer.
+    var ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ehIOS && !emApp && !conviteDispensado()) {
+      document.getElementById('convite-texto').innerHTML =
+        '<strong>Instale o Financeiro</strong>Toque em <svg class="icone-compartilhar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></svg> Compartilhar e depois em <strong style="display:inline;font-size:13px">Adicionar à Tela de Início</strong>.';
+      document.getElementById('convite-instalar').style.display = 'none';
+      setTimeout(function () { convite.classList.add('ativo'); }, 2500);
+    }
+
+    // Guarda a "casca" do app pra abrir mesmo com internet ruim (o sistema em si sempre vem da rede).
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    }
+  </script>
+</body>
+</html>
