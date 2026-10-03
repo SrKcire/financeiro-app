@@ -8,7 +8,7 @@ Ela **não tem dados nem regras do sistema**: só abre o link oficial do Web App
 
 | Arquivo | O que é |
 |---|---|
-| `index.html` | Abre o sistema (link oficial em `URL_SISTEMA`), mostra a abertura enquanto carrega, avisa se estiver sem internet e convida a instalar |
+| `index.html` | Abre o sistema (link oficial em `URL_SISTEMA`), mostra a abertura enquanto carrega, avisa se estiver sem internet, convida a instalar e guarda o login de quem marca "Manter conectado" (o navegador pode apagar o que fica dentro do iframe do Google) |
 | `manifest.webmanifest` | Nome, cores e ícones do app |
 | `sw.js` | Guarda só a "casca" (esta página e os ícones) pra abrir rápido e mostrar o aviso de sem conexão |
 | `icones/` | Ícones (logo do app) em todos os tamanhos |
@@ -22,4 +22,4 @@ Pra atualizar: copie o conteúdo desta pasta pro repositório `financeiro-app` e
 
 ## Requisito no Apps Script
 
-O `WebApp.gs` precisa continuar com `setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)` — é o que permite abrir o sistema dentro desta página. Trocar pra `DEFAULT` quebra o app instalado.
+O `WebApp.gs` precisa continuar com `setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)` — é o que permite abrir o sistema dentro desta página. Trocar pra `DEFAULT` quebra o app instalado. Em troca, o `Index.html` do Apps Script só abre o sistema quando a página de fora é o Google ou `https://srkcire.github.io` (`ORIGENS_PERMITIDAS`). Se este app mudar de endereço, atualize essa lista lá.

@@ -1,7 +1,7 @@
 // Service worker do app instalável: guarda só a "casca" (esta página, manifesto e ícones) pra ela
 // abrir rápido e mostrar a mensagem de "sem conexão". Os dados e o sistema vêm sempre do Apps
 // Script, pela rede — nada do Financeiro fica guardado aqui.
-var CACHE = 'financeiro-casca-v1';
+var CACHE = 'financeiro-casca-v2';
 var ARQUIVOS = [
   './', './index.html', './manifest.webmanifest',
   './icones/icone-192.png', './icones/icone-512.png', './icones/apple-touch-icon.png',

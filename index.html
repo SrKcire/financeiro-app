@@ -105,6 +105,27 @@
       var timerDemora = setTimeout(function () { mostrarMensagem('msg-demora'); }, 25000);
     }
 
+    /* ---------- Login salvo ("Manter conectado") ---------- */
+
+    // Dentro do iframe do Google o navegador pode apagar o login salvo (o Safari faz isso em poucos
+    // dias). Por isso o sistema pede pra esta página guardar o token de sessão no armazenamento dela
+    // e devolver quando o app abre. Só conversa com o iframe do Apps Script (googleusercontent.com).
+    var CHAVE_TOKEN = 'financeiro_token';
+    var ORIGEM_SISTEMA = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
+
+    window.addEventListener('message', function (ev) {
+      if (!ORIGEM_SISTEMA.test(ev.origin) || !ev.data || typeof ev.data.tipo !== 'string') return;
+      try {
+        if (ev.data.tipo === 'financeiro:pedir-token') {
+          ev.source.postMessage({ tipo: 'financeiro:token', token: localStorage.getItem(CHAVE_TOKEN) }, ev.origin);
+        } else if (ev.data.tipo === 'financeiro:guardar-token' && typeof ev.data.token === 'string' && ev.data.token.length <= 100) {
+          localStorage.setItem(CHAVE_TOKEN, ev.data.token);
+        } else if (ev.data.tipo === 'financeiro:esquecer-token') {
+          localStorage.removeItem(CHAVE_TOKEN);
+        }
+      } catch (e) { /* armazenamento bloqueado: o sistema pede login, como antes */ }
+    });
+
     /* ---------- Convite pra instalar ---------- */
 
     var emApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
